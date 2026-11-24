@@ -15,6 +15,19 @@ class TestDataSiswa(unittest.TestCase):
             current = current.next
 
         return hasil
+    
+    def test_stack_riwayat(self):
+        stack = StackRiwayat()
+
+        self.assertTrue(stack.is_empty())
+        self.assertIsNone(stack.pop())
+
+        stack.push("Ani")
+        stack.push("Budi")
+
+        self.assertEqual(stack.pop(), "Budi")
+        self.assertEqual(stack.pop(), "Ani")
+        self.assertTrue(stack.is_empty())
 
     def test_tambah_dan_tampilkan(self):
         self.data.tambah_siswa("Ani", "Satu-A")
@@ -46,7 +59,28 @@ class TestDataSiswa(unittest.TestCase):
         self.assertEqual(self.data.head.nama, "Anisa")
         self.assertEqual(self.data.head.kelas, "Satu-B")
 
-    
+    def test_sisipkan_di_tengah(self):
+        self.data.tambah_siswa("Ani", "Satu-A")
+        self.data.tambah_siswa("Budi", "Satu-B")
+        self.data.tambah_siswa("Cici", "Dua-A")
+
+        self.data.sisipkan_siswa_tengah("Dina", "Dua-B", 1)
+
+        self.assertEqual(
+            self.nama_siswa(),
+            ["Ani", "Dina", "Budi", "Cici"]
+        )
+
+    def test_sisipan_tidak_valid(self):
+        self.data.sisipkan_siswa_tengah("Ani", "Satu-A", 1)
+
+        self.data.tambah_siswa("Ani", "Satu-A")
+        self.data.tambah_siswa("Budi", "Satu-B")
+
+        self.data.sisipkan_siswa_tengah("Cici", "Dua-A", 0)
+        self.data.sisipkan_siswa_tengah("Cici", "Dua-A", 5)
+
+        self.assertEqual(self.nama_siswa(), ["Ani", "Budi"])
 
     def test_hapus_siswa(self):
         self.data.tambah_siswa("Ani", "Satu-A")
@@ -65,6 +99,26 @@ class TestDataSiswa(unittest.TestCase):
 
         self.data.hapus_siswa("Tidak ada")
 
+    def test_undo_hapus(self):
+            self.data.tambah_siswa("Ani", "Satu-A")
+            self.data.tambah_siswa("Budi", "Satu-B")
+            self.data.tambah_siswa("Cici", "Dua-A")
+
+            self.data.hapus_siswa("Budi")
+            self.data.undo_hapus()
+
+            self.assertEqual(
+                self.nama_siswa(),
+                ["Ani", "Budi", "Cici"]
+            )
+
+            self.data.hapus_siswa("Cici")
+            self.data.undo_hapus()
+
+            self.assertEqual(self.data.tail.nama, "Cici")
+
+    def test_undo_kosong(self):
+         self.data.undo_hapus()
  
 if __name__ == "__main__":
     unittest.main()
