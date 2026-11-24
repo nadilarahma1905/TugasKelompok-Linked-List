@@ -5,23 +5,48 @@ class NodeSiswa:
         self.next = None
 
 
+class NodeRiwayat:
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+
+
+class StackRiwayat:
+    def __init__(self):
+        self.top = None
+
+    def is_empty(self):
+        return self.top is None
+
+    def push(self, data):
+        node = NodeRiwayat(data)
+        node.next = self.top
+        self.top = node
+
+    def pop(self):
+        if self.is_empty():
+            return None
+
+        data = self.top.data
+        self.top = self.top.next
+        return data
+
+
 class DataSiswa:
     def __init__(self):
         self.head = None
+        self.tail = None
+        self.riwayat = StackRiwayat()
 
     # CREATE
     def tambah_siswa(self, nama, kelas):
-        node_baru = NodeSiswa(nama, kelas)
+        node = NodeSiswa(nama, kelas)
 
         if self.head is None:
-            self.head = node_baru
+            self.head = self.tail = node
         else:
-            current = self.head
-
-            while current.next is not None:
-                current = current.next
-
-            current.next = node_baru
+            self.tail.next = node
+            self.tail = node
 
         print("Data siswa berhasil ditambahkan!")
 
@@ -43,6 +68,7 @@ class DataSiswa:
             current = current.next
             nomor += 1
 
+    # SEARCH
     def cari_siswa(self, nama):
         current = self.head
 
@@ -67,7 +93,7 @@ class DataSiswa:
 
         print("Data siswa berhasil diperbarui!")
 
-    # INSERT DI POSISI TENGAH (0-based)
+    # INSERT DI TENGAH
     def sisipkan_siswa_tengah(self, nama, kelas, posisi):
         if self.head is None or self.head.next is None:
             print("Minimal harus ada 2 data siswa untuk menyisipkan di tengah!")
@@ -77,54 +103,92 @@ class DataSiswa:
             print("Posisi tengah harus lebih besar dari 0!")
             return
 
-        current = self.head
+        previous = self.head
         indeks = 0
 
-        while current.next is not None and indeks < posisi - 1:
-            current = current.next
+        while previous.next is not None and indeks < posisi - 1:
+            previous = previous.next
             indeks += 1
 
-        if current.next is None:
+        if previous.next is None:
             print("Posisi tidak berada di tengah rangkaian data siswa!")
             return
 
-        node_baru = NodeSiswa(nama, kelas)
-        node_baru.next = current.next
-        current.next = node_baru
+        node = NodeSiswa(nama, kelas)
+        node.next = previous.next
+        previous.next = node
+
         print(f"Data siswa berhasil disisipkan di tengah (posisi {posisi})!")
 
     # DELETE
     def hapus_siswa(self, nama):
-        if self.head is None:
-            print("Data siswa masih kosong!")
-            return
-
-        if self.head.nama.lower() == nama.lower():
-            node_hapus = self.head
-            self.head = node_hapus.next
-            node_hapus.next = None
-
-            print("Data siswa berhasil dihapus!")
-            return
-
         current = self.head
+        previous = None
+        posisi = 0
 
-        while current.next is not None:
-            if current.next.nama.lower() == nama.lower():
-                node_hapus = current.next
-                current.next = node_hapus.next
-                node_hapus.next = None
+        while current is not None:
+            if current.nama.lower() == nama.lower():
+                self.riwayat.push(
+                    (current.nama, current.kelas, posisi)
+                )
 
+                if previous is None:
+                    self.head = current.next
+                else:
+                    previous.next = current.next
+
+                if current is self.tail:
+                    self.tail = previous
+
+                if self.head is None:
+                    self.tail = None
+
+                current.next = None
                 print("Data siswa berhasil dihapus!")
                 return
 
+            previous = current
             current = current.next
+            posisi += 1
 
         print("Data siswa tidak ditemukan!")
 
+    # UNDO DELETE
+    def undo_hapus(self):
+        data = self.riwayat.pop()
+
+        if data is None:
+            print("Tidak ada riwayat penghapusan!")
+            return
+
+        nama, kelas, posisi = data
+        node = NodeSiswa(nama, kelas)
+
+        if self.head is None or posisi == 0:
+            node.next = self.head
+            self.head = node
+
+            if self.tail is None:
+                self.tail = node
+        else:
+            previous = self.head
+            indeks = 0
+
+            while previous.next is not None and indeks < posisi - 1:
+                previous = previous.next
+                indeks += 1
+
+            node.next = previous.next
+            previous.next = node
+
+            if node.next is None:
+                self.tail = node
+
+        print("Data siswa yang dihapus berhasil dikembalikan!")
+
 
 # PROGRAM UTAMA
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__": # pragma: no cover
     data = DataSiswa()
 
     while True:
@@ -134,13 +198,14 @@ if __name__ == "__main__":  # pragma: no cover
         print("3. Cari Data Siswa")
         print("4. Ubah Data Siswa")
         print("5. Hapus Data Siswa")
-        print("6. Keluar")
+        print("6. Undo Hapus")
+        print("7. Keluar")
 
-        pilihan = input("Pilih menu (1-6): ")
+        pilihan = input("Pilih menu (1-7): ")
 
         if pilihan == "1":
             nama = input("Masukkan Nama  : ")
-            kelas = input("Masukkan Kelas : ")
+            kelas = input("Masukkan Kelas (contoh Satu-A): ")
             data.tambah_siswa(nama, kelas)
 
         elif pilihan == "2":
@@ -159,7 +224,7 @@ if __name__ == "__main__":  # pragma: no cover
         elif pilihan == "4":
             nama = input("Masukkan nama siswa yang ingin diubah: ")
             nama_baru = input("Masukkan nama baru  : ")
-            kelas_baru = input("Masukkan kelas baru : ")
+            kelas_baru = input("Masukkan kelas baru (contoh Satu-A): ")
             data.ubah_siswa(nama, nama_baru, kelas_baru)
 
         elif pilihan == "5":
@@ -167,8 +232,11 @@ if __name__ == "__main__":  # pragma: no cover
             data.hapus_siswa(nama)
 
         elif pilihan == "6":
+            data.undo_hapus()
+
+        elif pilihan == "7":
             print("Terima kasih telah menggunakan aplikasi!")
             break
 
         else:
-            print("Pilihan tidak valid!")
+            print("Pilihan tidak ")
